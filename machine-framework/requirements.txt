@@ -1,0 +1,43 @@
+# ==============================================================================
+# machine 依存パッケージ & 環境バージョン (machine/requirements.txt)
+# ==============================================================================
+
+# ==============================================================================
+# 基礎環境 & システムパッケージ (APT)
+# ==============================================================================
+# OS: Raspberry Pi OS (Debian 12 Bookworm 64-bit 推奨) / Ubuntu 22.04, 24.04 LTS
+# Ruby: 3.2.x (>= 3.0.0)
+# Python: 3.12 (>= 3.10)
+
+# [System Packages (APT)]
+# sudo apt-get update && sudo apt-get install -y \
+#     build-essential \
+#     ruby-dev \
+#     pkg-config \
+#     cmake \
+#     libopencv-dev \           # OpenCV 4 開発ヘッダー (Lerobot-Dataset-Ruby gem ビルド用)
+#     libsdl2-dev \             # SDL2 コントローラー / キーボード入力ヘッダー
+#     libgpiod-dev \            # Raspberry Pi GPIO モーター制御ヘッダー (ext/gpio ビルド用)
+#     ffmpeg \
+#     libgl1 \
+#     libglib2.0-0
+
+# ==============================================================================
+# Ruby (制御クライアント本体)
+# ==============================================================================
+# インストールコマンド: 
+#   gem install ruby-sdl2:0.3.7 parquet:0.9.0 Lerobot-Dataset-Ruby:0.2.0
+
+# ruby-sdl2 == 0.3.7
+# parquet == 0.9.0
+# Lerobot-Dataset-Ruby == 0.2.0 (OpenCV C++ 拡張、データセット作成/読込を含む公式Gem)
+# rake == 13.0.6
+# bundler == 4.0.21
+
+# ==============================================================================
+# Python (データセット検証用: verify_dataset.sh / test_dataset.py)
+# ==============================================================================
+# インストールコマンド: pip install -r requirements.txt
+
+opencv-python==5.0.0.93        # 動画フレーム数・FPS 整合性チェック (cv2.VideoCapture)
+pyarrow==25.0.1

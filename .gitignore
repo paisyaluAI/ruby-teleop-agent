@@ -1,0 +1,39 @@
+# Python virtualenv & cache
+.venv/
+__pycache__/
+*.py[cod]
+*.pt
+*.safetensors
+
+# Ruby build & C-extension artifacts
+*.o
+*.so
+Makefile
+extconf.h
+mkmf.log
+**/ext/gpio/Makefile
+**/ext/gpio/*.o
+**/ext/gpio/*.so
+
+# Execution logs
+*.log
+play.log
+chunk_logs/
+nohup.out
+
+# Dataset & video outputs
+output_dataset/
+**/output_dataset/
+data/
+*.mp4
+!machine-framework/test/dummy_video.mp4
+
+# Model outputs & checkpoints
+outputs/
+
+# Editor & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
