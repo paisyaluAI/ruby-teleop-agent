@@ -67,12 +67,12 @@ sudo apt-get update
 sudo apt-get install -y ruby ruby-dev build-essential libsdl2-dev libopencv-dev libgpiod-dev
 
 # Gem パッケージのインストール (RubyGems から)
-gem install ruby-sdl2:0.3.7 parquet:0.9.0 Lerobot-Dataset-Ruby:0.2.0
+gem install ruby-sdl2:0.3.7 parquet:0.9.0 Lerobot-Dataset-Ruby:0.2.1
 
 # ※ ローカルの Lerobot-Dataset-Ruby リポジトリから直接ビルド・インストールする場合:
 # cd /path/to/Lerobot-Dataset-Ruby
 # gem build Lerobot-Dataset-Ruby.gemspec
-# gem install ./Lerobot-Dataset-Ruby-0.2.0.gem
+# gem install ./Lerobot-Dataset-Ruby-0.2.1.gem
 
 # (本番実機のみ) GPIO C++ 拡張モジュールのビルド
 chmod +x build.sh
