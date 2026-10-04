@@ -45,6 +45,8 @@ chmod +x setup_lerobot_env.sh
 # (手動で構築する場合)
 # conda create -n lerobot python=3.12 -y
 # conda activate lerobot
+# git clone https://github.com/huggingface/lerobot.git
+# cd lerobot
 # pip install -e "./lerobot[dataset,training,smolvla]"
 # pip install fastapi uvicorn opencv-python pydantic pandas pyarrow
 ```
