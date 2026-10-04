@@ -93,50 +93,102 @@ chmod +x build.sh
 
 ---
 
-## 実行手順
+## 実行手順 (全体の流れ)
 
-### ステップ 1: Python 推論サーバーの起動
+本システムは、**「①データ収集 → ②モデル学習 → ③推論サーバー起動 & 自律走行」** の流れで動作します。
 
-GPU マシン側で推論サーバーを起動します（デフォルト: ポート `8080` で待機）。
-
-```bash
-cd Inference-framework
-
-# Conda 環境 (lerobot) を適用して起動
-./run_server.sh 0.0.0.0 8080
-
-# ※ 特定の学習済みチェックポイントを指定する場合:
-# ./run_server.sh 0.0.0.0 8080 outputs/train/<モデルディレクトリ>/checkpoints/last/pretrained_model cuda
+```text
+[1. テレオペ操縦]                [2. 学習 (GPU)]                 [3. 自律走行]
+実機 / Mock 走行                収集データをマージ              推論サーバー起動
+     ↓                               ↓                              ↓
+LeRobotDataset 収集  ────→  SmolVLA ファインチューニング ────→ カメラ映像から自律走行
+(machine-framework)         (Inference-framework)         (推論 ⇔ 実機制御)
 ```
 
-### ステップ 2: Ruby クライアントの実行
+### ステップ 1: データ収集（テレオペレーション）
 
-#### A. 自律走行（VLA 推論実行）
-推論サーバーへカメラ映像を送信し、返信されたアクションで車体を自律走行させます。
-
-- **実機 (Raspberry Pi) で走行:**
-  ```bash
-  cd machine-framework
-  PRODUCTION=1 INFERENCE_SERVER_URL=http://<推論サーバーIP>:8080 PROMPT="青い星に向かう" ruby machine_vla.rb
-  ```
-- **PC 上で Mock 検証:**
-  ```bash
-  cd machine-framework
-  INFERENCE_SERVER_URL=http://127.0.0.1:8080 ruby machine_vla.rb
-  ```
-
-#### B. テレオペレーション（学習データ収集）
-手動でロボットを操縦し、カメラ映像と走行ログを LeRobotDataset v2 形式で記録します。
+まずは実機（または Mock 環境）でロボットを手動操縦し、学習用の走行データセット（カメラ映像 + 操縦ログ）を記録します。
 
 ```bash
 cd machine-framework
 
-# 実機でデータ収集 (ゲームパッド操作)
+# 実機でデータ収集 (ゲームパッド操作、カメラ映像と走行ログを記録)
 PRODUCTION=1 PROMPT="青い星に向かう" ruby machine.rb
 
 # Mock 環境でデータ収集テスト (キーボード操作)
 ruby machine.rb
 ```
+※ 走行データは `machine-framework/output_dataset/<YYYYMMDD_HHMM>/` に自動保存されます。
+
+---
+
+### ステップ 2: データセット準備とモデル学習 (SmolVLA)
+
+自律走行を行うには、事前に収集したデータセットで SmolVLA モデルを学習（ファインチューニング）する必要があります。
+
+1. **データセットの配置:**  
+   収集したデータセットディレクトリを `Inference-framework/data/` 配下に配置します。
+   ```bash
+   mkdir -p Inference-framework/data
+   cp -r machine-framework/output_dataset/<YYYYMMDD_HHMM> Inference-framework/data/
+   ```
+
+2. **データセットのマージ (複数回走行データがある場合):**  
+   [`merge.sh`](Inference-framework/merge.sh) を実行すると、`data/` 配下の走行データを結合して `data/merged` を作成します。
+   ```bash
+   cd Inference-framework
+   ./merge.sh
+   ```
+
+3. **モデル学習の実行 (GPU マシン):**  
+   [`learning.sh`](Inference-framework/learning.sh) を実行して SmolVLA ベースモデルをファインチューニングします。
+   ```bash
+   cd Inference-framework
+   ./learning.sh data/merged
+   ```
+   ※ 学習チェックポイントは `outputs/train/<セッション名>/` に保存され、最新モデルは `checkpoints/last/pretrained_model` に自動配置されます。
+
+---
+
+### ステップ 3: Python 推論サーバーの起動
+
+学習したチェックポイントをロードして推論サーバーを起動します（デフォルト: ポート `8080` で待機）。
+
+```bash
+cd Inference-framework
+
+# 最新の学習モデルを自動ロードして起動
+./run_server.sh 0.0.0.0 8080
+
+# ※ 特定のチェックポイントを指定して起動する場合:
+# ./run_server.sh 0.0.0.0 8080 outputs/train/<セッション名>/checkpoints/last/pretrained_model cuda
+```
+
+---
+
+### ステップ 4: Ruby クライアントによる自律走行（VLA 推論実行）
+
+推論サーバーへカメラ映像をリアルタイム送信し、返信された予測アクションで車体を自律走行させます。
+
+- **実機 (Raspberry Pi) で自律走行:**
+  ```bash
+  cd machine-framework
+  PRODUCTION=1 INFERENCE_SERVER_URL=http://<推論サーバーIP>:8080 PROMPT="青い星に向かう" ruby machine_vla.rb
+  ```
+
+- **PC 上で Mock 検証 (実機なし):**
+  ```bash
+  cd machine-framework
+  INFERENCE_SERVER_URL=http://127.0.0.1:8080 ruby machine_vla.rb
+  ```
+
+> [!TIP]
+> **ワンコマンドでのローカル Mock 検証**  
+> 学習済みモデルがある場合、[`run_mock_test.sh`](machine-framework/run_mock_test.sh) を実行すると推論サーバーのバックグラウンド起動と Mock 自律走行クライアントの起動を一度に行えます：
+> ```bash
+> cd machine-framework
+> ./run_mock_test.sh "青い星に向かう"
+> ```
 
 ---
 
