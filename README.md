@@ -73,21 +73,20 @@ Raspberry Pi（または検証用 PC）に Ruby および必要なシステム�
 - **GitHub リポジトリ**: [https://github.com/paisyaluAI/lerobot-dataset-ruby](https://github.com/paisyaluAI/lerobot-dataset-ruby)  
 
 ```bash
-cd machine-framework
-
-# 依存パッケージのインストール (Debian / Ubuntu / Raspberry Pi OS)
+# 1. 依存ライブラリのインストール (システム全体に導入されるため任意のディレクトリで実行可能)
 sudo apt-get update
 sudo apt-get install -y ruby ruby-dev build-essential libsdl2-dev libopencv-dev libgpiod-dev
 
-# Gem パッケージのインストール (RubyGems から)
+# 2. Gem パッケージのインストール (RubyGems から)
 gem install ruby-sdl2:0.3.7 parquet:0.9.0 Lerobot-Dataset-Ruby:0.2.1
 
 # ※ ローカルの Lerobot-Dataset-Ruby リポジトリから直接ビルド・インストールする場合:
-# cd /path/to/Lerobot-Dataset-Ruby
+# cd ../Lerobot-Dataset-Ruby
 # gem build Lerobot-Dataset-Ruby.gemspec
-# gem install ./Lerobot-Dataset-Ruby-0.2.1.gem
+# gem install ./Lerobot-Dataset-Ruby-*.gem
 
-# (本番実機のみ) GPIO C++ 拡張モジュールのビルド
+# 3. machine-framework へ移動して実機用モジュールをビルド (本番実機のみ)
+cd machine-framework
 chmod +x build.sh
 ./build.sh
 ```

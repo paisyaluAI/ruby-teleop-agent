@@ -149,7 +149,7 @@ Raspberry Pi 実機のモータードライバを制御するため、GPIO C++ �
 実機で実行する前に [`build.sh`](build.sh) を実行してコンパイルしてください（Mockモードのみで動かす場合は不要です）。
 
 ```bash
-cd machine-framework
+# ※ プロジェクトルートから実行する場合は cd machine-framework してください
 chmod +x build.sh run_production.sh run_mock_test.sh
 ./build.sh
 ```
