@@ -7,11 +7,17 @@ set -e
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONDA_BASE="$(dirname "$SCRIPT_DIR")/miniforge3"
+CONDA_BASE="${CONDA_BASE:-$HOME/miniforge3}"
+if [ ! -d "$CONDA_BASE" ] && [ -d "$(dirname "$SCRIPT_DIR")/miniforge3" ]; then
+    CONDA_BASE="$(dirname "$SCRIPT_DIR")/miniforge3"
+fi
 
 # Conda 環境の有効化
 if [ -f "$CONDA_BASE/bin/activate" ]; then
     source "$CONDA_BASE/bin/activate" lerobot
+elif command -v conda >/dev/null 2>&1; then
+    eval "$(conda shell.bash hook)"
+    conda activate lerobot
 else
     echo "警告: miniforge3 が見つかりません。現在の Python 環境を使用します。"
 fi

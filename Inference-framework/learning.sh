@@ -6,7 +6,7 @@ cd "$SCRIPT_DIR"
 
 if [ -z "${CONDA_DEFAULT_ENV:-}" ] || [ "${CONDA_DEFAULT_ENV}" != "lerobot" ]; then
   CONDA_PROFILE="${CONDA_BASE:-$HOME/miniforge3}/etc/profile.d/conda.sh"
-  if [ -f "$CONDA_PROFILE" ]; thenf
+  if [ -f "$CONDA_PROFILE" ]; then
     source "$CONDA_PROFILE"
     conda activate lerobot
   elif command -v conda >/dev/null 2>&1; then
