@@ -22,6 +22,23 @@ else
     echo "警告: miniforge3 が見つかりません。現在の Python 環境を使用します。"
 fi
 
+# lerobot ディレクトリの探索 (ruby-teleop-agent と同階層を優先)
+if [ -z "${LEROBOT_DIR:-}" ]; then
+  for candidate in \
+    "$(cd "$SCRIPT_DIR/../.." && pwd)/lerobot" \
+    "$(cd "$SCRIPT_DIR/.." && pwd)/lerobot" \
+    "$SCRIPT_DIR/lerobot" \
+    "$(cd "$SCRIPT_DIR/../.." && pwd)/VLA-Learning/lerobot"; do
+    if [ -d "$candidate/src" ]; then
+      export LEROBOT_DIR="$candidate"
+      export PYTHONPATH="$LEROBOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+      break
+    fi
+  done
+elif [ -d "$LEROBOT_DIR/src" ]; then
+  export PYTHONPATH="$LEROBOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+fi
+
 HOST="${1:-0.0.0.0}"
 PORT="${2:-8080}"
 CHECKPOINT="${3:-}"

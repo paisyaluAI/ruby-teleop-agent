@@ -24,6 +24,16 @@ Ruby で実機（4WD ロボットカー）を制御し、Python 側の推論サ�
 
 ## ディレクトリ構成
 
+推奨ワークスペース配置:
+```text
+<ワークスペース>/
+├── ruby-teleop-agent/          # 本リポジトリ
+│   ├── machine-framework/      # Ruby 実機制御・データ収集クライアント
+│   └── Inference-framework/    # Python SmolVLA 学習 & 非同期推論サーバー
+├── Lerobot-Dataset-Ruby/       # LeRobot データセット記録・読込 Gem (別リポジトリ)
+└── lerobot/                    # Hugging Face LeRobot ソースコード (同階層)
+```
+
 - [`machine-framework/`](machine-framework/): Ruby 製実機制御・テレオペデータ収集・自律走行クライアント
 - [`Inference-framework/`](Inference-framework/): Python 製 SmolVLA 学習 & 非同期推論サーバー
 
@@ -34,21 +44,22 @@ Ruby で実機（4WD ロボットカー）を制御し、Python 側の推論サ�
 ### 1. Python 推論サーバー側 (`Inference-framework`)
 
 推論サーバーおよび学習の実行には、GPU ホストマシン上に **Conda 仮想環境** の構築が必要です。
+公式 LeRobot リポジトリは `ruby-teleop-agent` と同じ親階層に配置して動作します。
 
 ```bash
 cd Inference-framework
 
-# セットアップスクリプトを実行 (Python 3.12 の Conda 環境 'lerobot' を作成し依存パッケージを導入)
+# セットアップスクリプトを実行
+# (Python 3.12 の Conda 環境 'lerobot' を作成、同階層の lerobot を自動検出・セットアップ)
 chmod +x setup_lerobot_env.sh
 ./setup_lerobot_env.sh
 
 # (手動で構築する場合)
 # conda create -n lerobot python=3.12 -y
 # conda activate lerobot
-# git clone https://github.com/huggingface/lerobot.git
-# cd lerobot
-# pip install -e "./lerobot[dataset,training,smolvla]"
-# pip install fastapi uvicorn opencv-python pydantic pandas pyarrow
+# # ruby-teleop-agent と同階層で: git clone https://github.com/huggingface/lerobot.git
+# pip install -e "../../lerobot[dataset,training,smolvla]"
+# pip install -r requirements.txt
 ```
 
 ### 2. Ruby 実機/クライアント側 (`machine-framework`)

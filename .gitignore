@@ -4,6 +4,7 @@ __pycache__/
 *.py[cod]
 *.pt
 *.safetensors
+lerobot/
 
 # Ruby build & C-extension artifacts
 *.o

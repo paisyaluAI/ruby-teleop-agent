@@ -100,7 +100,19 @@ VLA-Learning/
 ├── outputs/                   # 学習成果物・推論ログの出力ディレクトリ (git無視)
 │   ├── train/                 # 学習済みモデル・チェックポイント (pretrained_model/)
 │   └── chunk_logs/            # 推論サーバーが記録した実行時ログ (JSONL)
-└── lerobot/                   # Hugging Face LeRobot ソースコード (ローカルツリー)
+└── requirements.txt           # 推論・学習用 Python 依存パッケージ定義
+
+※ 公式の LeRobot リポジトリ (`lerobot/`) は本リポジトリと同じ親階層 (外側) への配置が推奨されます。
+```
+
+推奨ワークスペース構成:
+```text
+<ワークスペース>/
+├── ruby-teleop-agent/
+│   ├── machine-framework/
+│   └── Inference-framework/
+├── Lerobot-Dataset-Ruby/       # (ローカル開発時)
+└── lerobot/                    # Hugging Face LeRobot ソース (同階層)
 ```
 
 ---
@@ -114,15 +126,18 @@ VLA-Learning/
 
 ### 環境構築手順
 
-1. **リポジトリのクローン**
+1. **同階層に LeRobot をクローン (手動の場合)**
+   本リポジトリと同じディレクトリ階層に公式 LeRobot を clone します。
+   （※ セットアップスクリプト実行時に存在しない場合は自動で同階層にクローンされます）
    ```bash
-   git clone https://github.com/paisyaluAI/VLA-Learning.git
-   cd VLA-Learning
+   # ruby-teleop-agent と同じ階層で実行
+   git clone https://github.com/huggingface/lerobot.git
    ```
 
 2. **セットアップスクリプトの実行**
-   [`setup_lerobot_env.sh`](setup_lerobot_env.sh) を実行すると、Python 3.12 の Conda 仮想環境 `lerobot` が作成され、SmolVLA に必要な依存関係がインストールされます。
+   [`setup_lerobot_env.sh`](setup_lerobot_env.sh) を実行すると、Python 3.12 の Conda 仮想環境 `lerobot` が作成され、同階層の `lerobot` が自動検出・Editable インストールされます。
    ```bash
+   cd ruby-teleop-agent/Inference-framework
    chmod +x setup_lerobot_env.sh learning.sh merge.sh run_server.sh
    ./setup_lerobot_env.sh
    ```
@@ -132,8 +147,9 @@ VLA-Learning/
    conda create -n lerobot python=3.12 -y
    conda activate lerobot
    pip install --upgrade pip
-   pip install -e "./lerobot[dataset,training,smolvla]"
-   pip install fastapi uvicorn opencv-python pydantic pandas pyarrow
+   # ruby-teleop-agent と同階層の lerobot を editable インストール
+   pip install -e "../../lerobot[dataset,training,smolvla]"
+   pip install -r requirements.txt
    ```
 
 ---

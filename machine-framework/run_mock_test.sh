@@ -31,12 +31,15 @@ if curl -s "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
     echo "[1/2] 推論サーバーは既に起動しています (Port: $PORT)。"
     SERVER_PID=""
 else
-    CONDA_PYTHON="$HOME/miniforge3/envs/lerobot/bin/python"
-    if [ ! -f "$CONDA_PYTHON" ]; then
+    CONDA_PYTHON="python"
+    if [ -n "${CONDA_PREFIX:-}" ] && [ "$(basename "$CONDA_PREFIX")" = "lerobot" ] && [ -x "$CONDA_PREFIX/bin/python" ]; then
+        CONDA_PYTHON="$CONDA_PREFIX/bin/python"
+    elif [ -x "$PROJECT_ROOT/../miniforge3/envs/lerobot/bin/python" ]; then
+        CONDA_PYTHON="$PROJECT_ROOT/../miniforge3/envs/lerobot/bin/python"
+    elif [ -x "$PROJECT_ROOT/miniforge3/envs/lerobot/bin/python" ]; then
         CONDA_PYTHON="$PROJECT_ROOT/miniforge3/envs/lerobot/bin/python"
-    fi
-    if [ ! -f "$CONDA_PYTHON" ]; then
-        CONDA_PYTHON="python"
+    elif [ -x "$HOME/miniforge3/envs/lerobot/bin/python" ]; then
+        CONDA_PYTHON="$HOME/miniforge3/envs/lerobot/bin/python"
     fi
 
     echo "[1/2] 推論サーバーを起動中 (Port: $PORT)..."

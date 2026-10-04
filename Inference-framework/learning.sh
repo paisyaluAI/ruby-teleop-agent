@@ -15,7 +15,25 @@ if [ -z "${CONDA_DEFAULT_ENV:-}" ] || [ "${CONDA_DEFAULT_ENV}" != "lerobot" ]; t
   fi
 fi
 
-export PYTHONPATH="$SCRIPT_DIR/lerobot/src${PYTHONPATH:+:$PYTHONPATH}"
+# 1. lerobot ディレクトリの探索 (ruby-teleop-agent と同階層を優先)
+LEROBOT_DIR="${LEROBOT_DIR:-}"
+if [ -z "$LEROBOT_DIR" ] || [ ! -d "$LEROBOT_DIR" ]; then
+  for candidate in \
+    "$(cd "$SCRIPT_DIR/../.." && pwd)/lerobot" \
+    "$(cd "$SCRIPT_DIR/.." && pwd)/lerobot" \
+    "$SCRIPT_DIR/lerobot" \
+    "$(cd "$SCRIPT_DIR/../.." && pwd)/VLA-Learning/lerobot"; do
+    if [ -d "$candidate/src" ]; then
+      LEROBOT_DIR="$candidate"
+      break
+    fi
+  done
+fi
+
+if [ -n "$LEROBOT_DIR" ] && [ -d "$LEROBOT_DIR/src" ]; then
+  export PYTHONPATH="$LEROBOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
+  echo "[learning.sh] LeRobot source detected: $LEROBOT_DIR/src"
+fi
 
 if [ "$#" -ne 1 ]; then
   echo "Usage: $0 <dataset_dir>" >&2

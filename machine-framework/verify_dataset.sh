@@ -5,9 +5,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DATASET_PATH="${1:-$SCRIPT_DIR/output_dataset}"
 
 PYTHON_BIN="$(which python3)"
-if [ -f "$SCRIPT_DIR/../miniforge3/envs/lerobot/bin/python" ]; then
+if [ -n "${CONDA_PREFIX:-}" ] && [ "$(basename "$CONDA_PREFIX")" = "lerobot" ] && [ -x "$CONDA_PREFIX/bin/python" ]; then
+    PYTHON_BIN="$CONDA_PREFIX/bin/python"
+elif [ -x "$SCRIPT_DIR/../../miniforge3/envs/lerobot/bin/python" ]; then
+    PYTHON_BIN="$SCRIPT_DIR/../../miniforge3/envs/lerobot/bin/python"
+elif [ -x "$SCRIPT_DIR/../miniforge3/envs/lerobot/bin/python" ]; then
     PYTHON_BIN="$SCRIPT_DIR/../miniforge3/envs/lerobot/bin/python"
-elif [ -f "$HOME/miniforge3/envs/lerobot/bin/python" ]; then
+elif [ -x "$HOME/miniforge3/envs/lerobot/bin/python" ]; then
     PYTHON_BIN="$HOME/miniforge3/envs/lerobot/bin/python"
 fi
 
