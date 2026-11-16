@@ -80,39 +80,35 @@ flowchart TD
 このリポジトリの主要ファイルと役割は以下の通りです。
 
 ```
-VLA-Learning/
+Inference-framework/
 ├── README.md                  # 本ドキュメント
 ├── learning.sh                # SmolVLA ファインチューニング学習実行シェルスクリプト
 ├── merge.sh                   # 複数エピソードのデータセットを1つにマージするスクリプト
-├── run_server.sh              # 推論サーバー起動スクリプト (Conda環境自動適用)
+├── run_server.sh              # 推論サーバー起動スクリプト (共通 .venv 環境自動適用)
 ├── lerobot_async_server.py    # FastAPI ベースの SmolVLA HTTP 非同期推論サーバー本体
-├── setup_lerobot_env.sh       # Python 3.12 + LeRobot 依存関係のセットアップスクリプト
-├── convert_py/                # データセット変換・メタデータ補正用 Python スクリプト群
-│   ├── rescale_dataset_to_1.py # アクション/状態値を [-100, 100] から [-1.0, 1.0] にリスケール
-│   ├── json_to_parquet.py     # tasks.jsonl を tasks.parquet へ変換
-│   ├── add_task_index.py      # タスクインデックスの付与
-│   └── make_stats_json.py     # データセットの正規化統計情報 (stats.json) を再生成
-├── bash/
-│   └── taskcheck.sh           # データセット内のタスク構成確認スクリプト
+├── setup_lerobot_env.sh       # uv による共通仮想環境 (robot-stack/.venv) セットアップスクリプト
 ├── data/                      # 収集・変換した学習用データセット配置ディレクトリ (git無視)
 │   ├── <YYYYMMDD_HHMM>/       # 各走行回ごとのデータセット (meta/, data/, videos/)
 │   └── merged/                # merge.sh で統合されたマージ済みデータセット
 ├── outputs/                   # 学習成果物・推論ログの出力ディレクトリ (git無視)
 │   ├── train/                 # 学習済みモデル・チェックポイント (pretrained_model/)
 │   └── chunk_logs/            # 推論サーバーが記録した実行時ログ (JSONL)
-└── requirements.txt           # 推論・学習用 Python 依存パッケージ定義
+└── requirements.txt           # 推論・学習用 Python 依存パッケージ定義 (参照用)
 
-※ 公式の LeRobot リポジトリ (`lerobot/`) は本リポジトリと同じ親階層 (外側) への配置が推奨されます。
+※ Python 仮想環境はワークスペースルートの `robot-stack/.venv` (uv 管理) を共通利用し、公式 LeRobot リポジトリは `robot-stack/third_party/lerobot` に配置します。
 ```
 
 推奨ワークスペース構成:
 ```text
-<ワークスペース>/
-├── ruby-teleop-agent/
-│   ├── machine-framework/
-│   └── Inference-framework/
-├── Lerobot-Dataset-Ruby/       # (ローカル開発時)
-└── lerobot/                    # Hugging Face LeRobot ソース (同階層)
+robot-stack/
+├── .venv/                          # Python 共通仮想環境 (uv 管理)
+├── pyproject.toml                  # Python 依存パッケージ・ワークスペース定義 (uv)
+├── apps/ruby-teleop-agent/
+│   ├── machine-framework/          # Ruby 実機制御・データ収集クライアント
+│   └── Inference-framework/        # Python 推論サーバー (共通 .venv 利用)
+├── libraries/Lerobot-Dataset-Ruby/ # 独立した Ruby Gem 環境
+├── training/VLA-Learning/          # SmolVLA 学習・推論環境 (共通 .venv 利用)
+└── third_party/lerobot/            # Hugging Face LeRobot ソース (Editable インストール)
 ```
 
 ---
@@ -120,36 +116,34 @@ VLA-Learning/
 ## システム要件とセットアップ
 
 ### 推奨環境
-- **OS**: Linux (Ubuntu 20.04 / 22.04 LTS 等)
+- **OS**: Linux (Ubuntu 20.04 / 22.04 / 24.04 LTS 等)
 - **GPU**: NVIDIA GPU (CUDA 12.x 対応、VRAM 8GB 以上推奨)
-- **Package Manager**: [Miniforge](https://github.com/conda-forge/miniforge) または Conda
+- **Package Manager**: [uv](https://docs.astral.sh/uv/) (Python 3.12 共通仮想環境 `robot-stack/.venv`)
 
 ### 環境構築手順
 
-1. **同階層に LeRobot をクローン (手動の場合)**
-   本リポジトリと同じディレクトリ階層に公式 LeRobot を clone します。
-   （※ セットアップスクリプト実行時に存在しない場合は自動で同階層にクローンされます）
+1. **ワークスペースルートで `uv sync` を実行（推奨）**
+   `robot-stack` ルートディレクトリの `pyproject.toml` に基づき、Python 3.12 の共通仮想環境 `robot-stack/.venv` の作成および `third_party/lerobot` の Editable インストールが一括で行われます。
    ```bash
-   # ruby-teleop-agent と同じ階層で実行
-   git clone https://github.com/huggingface/lerobot.git
+   cd /path/to/robot-stack
+   uv sync
    ```
 
-2. **セットアップスクリプトの実行**
-   [`setup_lerobot_env.sh`](setup_lerobot_env.sh) を実行すると、Python 3.12 の Conda 仮想環境 `lerobot` が作成され、同階層の `lerobot` が自動検出・Editable インストールされます。
+2. **またはセットアップスクリプトの実行**
+   [`setup_lerobot_env.sh`](setup_lerobot_env.sh) を実行すると、ワークスペースルートの `robot-stack/.venv` が `uv` によって構築・同期されます（`third_party/lerobot` が存在しない場合は自動でクローンされます）。
    ```bash
-   cd ruby-teleop-agent/Inference-framework
+   cd apps/ruby-teleop-agent/Inference-framework
    chmod +x setup_lerobot_env.sh learning.sh merge.sh run_server.sh
    ./setup_lerobot_env.sh
    ```
 
-3. **（手動セットアップを行う場合）**
+3. **（手動で `uv pip` によりセットアップを行う場合）**
    ```bash
-   conda create -n lerobot python=3.12 -y
-   conda activate lerobot
-   pip install --upgrade pip
-   # ruby-teleop-agent と同階層の lerobot を editable インストール
-   pip install -e "../../lerobot[dataset,training,smolvla]"
-   pip install -r requirements.txt
+   cd /path/to/robot-stack
+   uv venv .venv --python 3.12
+   source .venv/bin/activate
+   uv pip install -e "third_party/lerobot[dataset,training,smolvla]"
+   uv pip install -r apps/ruby-teleop-agent/Inference-framework/requirements.txt
    ```
 
 ---
@@ -157,7 +151,7 @@ VLA-Learning/
 ## 推論サーバーの起動方法
 
 ### 1. 起動スクリプト (推奨)
-[`run_server.sh`](run_server.sh) を使用すると、Conda 環境の自動アクティベートと最新モデルの自動探索が行われます。
+[`run_server.sh`](run_server.sh) を使用すると、共通仮想環境（`robot-stack/.venv`）の自動アクティベートと最新モデルの自動探索が行われます。
 
 ```bash
 # 基本起動 (すべてのインターフェース 0.0.0.0 の ポート 8080 でリッスン、最新モデルを自動ロード)
@@ -169,10 +163,10 @@ VLA-Learning/
 ```
 
 ### 2. Python 直接起動
-環境変数を細かく制御したい場合は、直接 [`lerobot_async_server.py`](lerobot_async_server.py) を実行します。
+環境変数を細かく制御したい場合は、共通仮想環境 `robot-stack/.venv` を有効化して直接 [`lerobot_async_server.py`](lerobot_async_server.py) を実行します。
 
 ```bash
-conda activate lerobot
+source ../../../.venv/bin/activate
 
 # 自動検出される最新モデルで起動
 python lerobot_async_server.py --host 0.0.0.0 --port 8080

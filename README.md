@@ -26,16 +26,17 @@ Ruby で実機（4WD ロボットカー）を制御し、Python 側の推論サ�
 
 推奨ワークスペース配置:
 ```text
-<ワークスペース>/
-├── ruby-teleop-agent/          # 本リポジトリ
-│   ├── machine-framework/      # Ruby 実機制御・データ収集クライアント
-│   └── Inference-framework/    # Python SmolVLA 学習 & 非同期推論サーバー
-├── Lerobot-Dataset-Ruby/       # LeRobot データセット記録・読込 Gem (別リポジトリ)
-└── lerobot/                    # Hugging Face LeRobot ソースコード (同階層)
+robot-stack/
+├── .venv/                          # Python 共通仮想環境 (uv 管理: LeRobot / 推論サーバー / 学習)
+├── pyproject.toml                  # Python 依存パッケージ定義 (uv)
+├── apps/ruby-teleop-agent/         # 本リポジトリ (Ruby クライアント + Python 推論サーバー)
+├── libraries/Lerobot-Dataset-Ruby/ # Dataset記録・読込Gem (独立した Ruby Gem 環境)
+├── training/VLA-Learning/          # 学習・推論環境 (共通 .venv 利用)
+└── third_party/lerobot/            # Hugging Face LeRobot (Editable インストール)
 ```
 
 - [`machine-framework/`](machine-framework/): Ruby 製実機制御・テレオペデータ収集・自律走行クライアント
-- [`Inference-framework/`](Inference-framework/): Python 製 SmolVLA 学習 & 非同期推論サーバー
+- [`Inference-framework/`](Inference-framework/): Python 製 SmolVLA 学習 & 非同期推論サーバー（共通 `robot-stack/.venv` を利用）
 
 ---
 
@@ -43,23 +44,26 @@ Ruby で実機（4WD ロボットカー）を制御し、Python 側の推論サ�
 
 ### 1. Python 推論サーバー側 (`Inference-framework`)
 
-推論サーバーおよび学習の実行には、GPU ホストマシン上に **Conda 仮想環境** の構築が必要です。
-公式 LeRobot リポジトリは `ruby-teleop-agent` と同じ親階層に配置して動作します。
+推論サーバーおよび学習の実行には、ワークスペース共通の **uv 仮想環境 (`robot-stack/.venv`)** を利用します（既存の Conda 環境は廃止し、`uv` に統合しました）。
+公式 LeRobot リポジトリは `robot-stack/third_party/lerobot` に配置します。
 
 ```bash
-cd Inference-framework
+# 方法A: robot-stack ルートで uv sync を実行 (推奨)
+cd /path/to/robot-stack
+uv sync
 
-# セットアップスクリプトを実行
-# (Python 3.12 の Conda 環境 'lerobot' を作成、同階層の lerobot を自動検出・セットアップ)
+# 方法B: Inference-framework のセットアップスクリプトを実行
+# (Python 3.12 の共通仮想環境 robot-stack/.venv を作成・同期し、third_party/lerobot をセットアップ)
+cd apps/ruby-teleop-agent/Inference-framework
 chmod +x setup_lerobot_env.sh
 ./setup_lerobot_env.sh
 
-# (手動で構築する場合)
-# conda create -n lerobot python=3.12 -y
-# conda activate lerobot
-# # ruby-teleop-agent と同階層で: git clone https://github.com/huggingface/lerobot.git
-# pip install -e "../../lerobot[dataset,training,smolvla]"
-# pip install -r requirements.txt
+# (手動で uv pip により構築する場合)
+# cd /path/to/robot-stack
+# uv venv .venv --python 3.12
+# source .venv/bin/activate
+# uv pip install -e "third_party/lerobot[dataset,training,smolvla]"
+# uv pip install -r apps/ruby-teleop-agent/Inference-framework/requirements.txt
 ```
 
 ### 2. Ruby 実機/クライアント側 (`machine-framework`)
@@ -81,7 +85,7 @@ sudo apt-get install -y ruby ruby-dev build-essential libsdl2-dev libopencv-dev 
 gem install ruby-sdl2:0.3.7 parquet:0.9.0 Lerobot-Dataset-Ruby:0.2.1
 
 # ※ ローカルの Lerobot-Dataset-Ruby リポジトリから直接ビルド・インストールする場合:
-# cd ../Lerobot-Dataset-Ruby
+# cd ../../libraries/Lerobot-Dataset-Ruby
 # gem build Lerobot-Dataset-Ruby.gemspec
 # gem install ./Lerobot-Dataset-Ruby-*.gem
 

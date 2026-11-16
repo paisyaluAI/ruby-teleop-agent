@@ -37,7 +37,8 @@
 # ==============================================================================
 # Python (データセット検証用: verify_dataset.sh / test_dataset.py)
 # ==============================================================================
-# インストールコマンド: pip install -r requirements.txt
+# 共通環境利用時: robot-stack ルートで `uv sync` (robot-stack/.venv を自動検出)
+# 単体インストール時: uv pip install -r requirements.txt
 
 opencv-python==5.0.0.93        # 動画フレーム数・FPS 整合性チェック (cv2.VideoCapture)
 pyarrow==25.0.1

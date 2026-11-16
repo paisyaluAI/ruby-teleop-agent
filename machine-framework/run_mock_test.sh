@@ -9,9 +9,10 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WORKSPACE_ROOT="$(cd "$PROJECT_ROOT/../.." && pwd)"
 SERVER_SCRIPT="$PROJECT_ROOT/Inference-framework/lerobot_async_server.py"
 if [ ! -f "$SERVER_SCRIPT" ]; then
-    SERVER_SCRIPT="$PROJECT_ROOT/../VLA-Learning/lerobot_async_server.py"
+    SERVER_SCRIPT="$WORKSPACE_ROOT/training/VLA-Learning/lerobot_async_server.py"
 fi
 CLIENT_SCRIPT="$SCRIPT_DIR/machine_vla.rb"
 PORT=8080
@@ -31,19 +32,19 @@ if curl -s "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
     echo "[1/2] 推論サーバーは既に起動しています (Port: $PORT)。"
     SERVER_PID=""
 else
-    CONDA_PYTHON="python"
-    if [ -n "${CONDA_PREFIX:-}" ] && [ "$(basename "$CONDA_PREFIX")" = "lerobot" ] && [ -x "$CONDA_PREFIX/bin/python" ]; then
-        CONDA_PYTHON="$CONDA_PREFIX/bin/python"
-    elif [ -x "$PROJECT_ROOT/../miniforge3/envs/lerobot/bin/python" ]; then
-        CONDA_PYTHON="$PROJECT_ROOT/../miniforge3/envs/lerobot/bin/python"
-    elif [ -x "$PROJECT_ROOT/miniforge3/envs/lerobot/bin/python" ]; then
-        CONDA_PYTHON="$PROJECT_ROOT/miniforge3/envs/lerobot/bin/python"
-    elif [ -x "$HOME/miniforge3/envs/lerobot/bin/python" ]; then
-        CONDA_PYTHON="$HOME/miniforge3/envs/lerobot/bin/python"
+    PYTHON_BIN="python3"
+    if [ -n "${VIRTUAL_ENV:-}" ] && [ -x "$VIRTUAL_ENV/bin/python" ]; then
+        PYTHON_BIN="$VIRTUAL_ENV/bin/python"
+    elif [ -x "$WORKSPACE_ROOT/.venv/bin/python" ]; then
+        PYTHON_BIN="$WORKSPACE_ROOT/.venv/bin/python"
+    elif [ -x "$PROJECT_ROOT/.venv/bin/python" ]; then
+        PYTHON_BIN="$PROJECT_ROOT/.venv/bin/python"
+    elif command -v python >/dev/null 2>&1; then
+        PYTHON_BIN="python"
     fi
 
-    echo "[1/2] 推論サーバーを起動中 (Port: $PORT)..."
-    "$CONDA_PYTHON" "$SERVER_SCRIPT" --port "$PORT" &
+    echo "[1/2] 推論サーバーを起動中 (Port: $PORT, Python: $PYTHON_BIN)..."
+    "$PYTHON_BIN" "$SERVER_SCRIPT" --port "$PORT" &
     SERVER_PID=$!
 
     # サーバー待機

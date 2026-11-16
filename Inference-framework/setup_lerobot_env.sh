@@ -2,32 +2,20 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$SCRIPT_DIR"
 
-if ! command -v conda >/dev/null 2>&1; then
-  CONDA_PROFILE="${CONDA_BASE:-$HOME/miniforge3}/etc/profile.d/conda.sh"
-  if [ -f "$CONDA_PROFILE" ]; then
-    source "$CONDA_PROFILE"
-  else
-    echo "conda is required" >&2
-    exit 1
-  fi
+if ! command -v uv >/dev/null 2>&1; then
+  echo "uv is required (https://docs.astral.sh/uv/)" >&2
+  exit 1
 fi
 
-eval "$(conda shell.bash hook)"
-if ! conda env list | awk '{print $1}' | grep -qx 'lerobot'; then
-  conda create -n lerobot python=3.12 -y
-fi
-conda activate lerobot
-
-# 1. lerobot ディレクトリの探索 (ruby-teleop-agent と同階層を優先)
+# 1. ワークスペース内の lerobot ディレクトリを探索
 LEROBOT_DIR="${LEROBOT_DIR:-}"
 if [ -z "$LEROBOT_DIR" ] || [ ! -d "$LEROBOT_DIR" ]; then
   for candidate in \
-    "$(cd "$SCRIPT_DIR/../.." && pwd)/lerobot" \
-    "$(cd "$SCRIPT_DIR/.." && pwd)/lerobot" \
-    "$SCRIPT_DIR/lerobot" \
-    "$(cd "$SCRIPT_DIR/../.." && pwd)/VLA-Learning/lerobot"; do
+    "$WORKSPACE_ROOT/third_party/lerobot" \
+    "$WORKSPACE_ROOT/apps/ruby-teleop-agent/lerobot"; do
     if [ -f "$candidate/pyproject.toml" ] || [ -d "$candidate/src/lerobot" ]; then
       LEROBOT_DIR="$candidate"
       break
@@ -35,21 +23,32 @@ if [ -z "$LEROBOT_DIR" ] || [ ! -d "$LEROBOT_DIR" ]; then
   done
 fi
 
-# 2. 見つからない場合は ruby-teleop-agent と同じ階層に git clone
+# 2. 見つからない場合は third_party に clone
 if [ -z "$LEROBOT_DIR" ] || [ ! -d "$LEROBOT_DIR" ]; then
-  DEFAULT_LEROBOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)/lerobot"
+  DEFAULT_LEROBOT_DIR="$WORKSPACE_ROOT/third_party/lerobot"
   echo "lerobot ディレクトリが見つかりませんでした。"
-  echo "ruby-teleop-agent と同じ階層 ($DEFAULT_LEROBOT_DIR) に git clone します..."
+  echo "third_party ($DEFAULT_LEROBOT_DIR) に git clone します..."
+  mkdir -p "$(dirname "$DEFAULT_LEROBOT_DIR")"
   git clone https://github.com/huggingface/lerobot.git "$DEFAULT_LEROBOT_DIR"
   LEROBOT_DIR="$DEFAULT_LEROBOT_DIR"
 fi
 
 echo "使用する LeRobot ディレクトリ: $LEROBOT_DIR"
 
-python -m pip install --upgrade pip
-python -m pip install -e "$LEROBOT_DIR[dataset,training,smolvla]"
-python -m pip install -r "$SCRIPT_DIR/requirements.txt"
+if [ -f "$WORKSPACE_ROOT/pyproject.toml" ]; then
+  echo "Syncing shared uv environment at $WORKSPACE_ROOT/.venv ..."
+  (cd "$WORKSPACE_ROOT" && uv sync)
+else
+  VENV_DIR="${VENV_DIR:-$WORKSPACE_ROOT/.venv}"
+  if [ ! -d "$VENV_DIR" ]; then
+    uv venv "$VENV_DIR" --python 3.12
+  fi
+  uv pip install --python "$VENV_DIR/bin/python" -e "$LEROBOT_DIR[dataset,training,smolvla]"
+  uv pip install --python "$VENV_DIR/bin/python" -r "$SCRIPT_DIR/requirements.txt"
+fi
 
+# shellcheck disable=SC1091
+source "$WORKSPACE_ROOT/.venv/bin/activate"
 export PYTHONPATH="$LEROBOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"
-echo "Setup complete."
-echo "Run: ./learning.sh"
+echo "Setup complete ($VIRTUAL_ENV)."
+echo "Run: ./learning.sh <dataset_dir>"

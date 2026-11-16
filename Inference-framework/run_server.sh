@@ -7,28 +7,25 @@ set -e
 # ==============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-CONDA_BASE="${CONDA_BASE:-$HOME/miniforge3}"
-if [ ! -d "$CONDA_BASE" ] && [ -d "$(dirname "$SCRIPT_DIR")/miniforge3" ]; then
-    CONDA_BASE="$(dirname "$SCRIPT_DIR")/miniforge3"
-fi
+WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+VENV_ACTIVATE="${VENV_DIR:-$WORKSPACE_ROOT/.venv}/bin/activate"
 
-# Conda 環境の有効化
-if [ -f "$CONDA_BASE/bin/activate" ]; then
-    source "$CONDA_BASE/bin/activate" lerobot
-elif command -v conda >/dev/null 2>&1; then
-    eval "$(conda shell.bash hook)"
-    conda activate lerobot
+# uv 共通仮想環境 (.venv) の有効化
+if [ -f "$VENV_ACTIVATE" ]; then
+    # shellcheck disable=SC1090
+    source "$VENV_ACTIVATE"
+elif [ -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
+    # shellcheck disable=SC1091
+    source "$SCRIPT_DIR/.venv/bin/activate"
 else
-    echo "警告: miniforge3 が見つかりません。現在の Python 環境を使用します。"
+    echo "警告: $WORKSPACE_ROOT/.venv が見つかりません。現在の Python 環境を使用します。"
 fi
 
-# lerobot ディレクトリの探索 (ruby-teleop-agent と同階層を優先)
+# ワークスペース内の lerobot ディレクトリを探索
 if [ -z "${LEROBOT_DIR:-}" ]; then
   for candidate in \
-    "$(cd "$SCRIPT_DIR/../.." && pwd)/lerobot" \
-    "$(cd "$SCRIPT_DIR/.." && pwd)/lerobot" \
-    "$SCRIPT_DIR/lerobot" \
-    "$(cd "$SCRIPT_DIR/../.." && pwd)/VLA-Learning/lerobot"; do
+    "$WORKSPACE_ROOT/third_party/lerobot" \
+    "$WORKSPACE_ROOT/apps/ruby-teleop-agent/lerobot"; do
     if [ -d "$candidate/src" ]; then
       export LEROBOT_DIR="$candidate"
       export PYTHONPATH="$LEROBOT_DIR/src${PYTHONPATH:+:$PYTHONPATH}"

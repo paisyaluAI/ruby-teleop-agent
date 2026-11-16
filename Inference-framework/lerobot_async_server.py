@@ -23,14 +23,12 @@ from pydantic import BaseModel
 import torch
 import uvicorn
 
-# LeRobot パス設定 (同階層や外部配置に対応)
+# LeRobot パス設定
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+WORKSPACE_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", ".."))
 lerobot_candidates = [
     os.environ.get("LEROBOT_DIR"),
-    os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "lerobot")),  # ruby-teleop-agent と同階層
-    os.path.abspath(os.path.join(SCRIPT_DIR, "..", "lerobot")),        # ruby-teleop-agent 直下
-    os.path.abspath(os.path.join(SCRIPT_DIR, "lerobot")),             # Inference-framework 直下
-    os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "VLA-Learning", "lerobot")),
+    os.path.join(WORKSPACE_ROOT, "third_party", "lerobot"),
 ]
 
 for candidate in lerobot_candidates:

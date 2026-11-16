@@ -1,5 +1,4 @@
-# Environment & Installers
-Miniforge3-*.sh
+# Environment
 .venv/
 env/
 venv/

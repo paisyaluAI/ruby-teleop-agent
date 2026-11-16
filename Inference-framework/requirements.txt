@@ -7,7 +7,7 @@
 # ==============================================================================
 # OS: Ubuntu 22.04, 24.04 LTS (x86_64)
 # CUDA Toolkit: >= 12.x / 13.x (NVIDIA Driver >= 550.x)
-# Python: 3.12 (Miniforge3 / Conda 推奨)
+# Python: 3.12 (uv による robot-stack/.venv 共通管理)
 
 # [System Packages (APT)]
 # sudo apt-get update && sudo apt-get install -y \
@@ -27,9 +27,9 @@
 # ==============================================================================
 # LeRobot 本体 (ローカルソース / Editable インストール)
 # ==============================================================================
-# 推奨構成: ruby-teleop-agent と同階層に lerobot リポジトリを clone
-# セットアップスクリプト利用時: ./setup_lerobot_env.sh (自動検出・セットアップ)
-# 手動インストール時: pip install -e "../../lerobot[dataset,training,smolvla]"
+# 推奨構成: robot-stack ルートの pyproject.toml による uv 一元管理 (robot-stack/.venv)
+# ワークスペース同期: (cd ../../.. && uv sync) または ./setup_lerobot_env.sh
+# 手動インストール時: uv pip install -e "../../../third_party/lerobot[dataset,training,smolvla]"
 
 # ==============================================================================
 # Python パッケージ (学習 & 非同期推論サーバー)
