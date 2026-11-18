@@ -5,13 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$SCRIPT_DIR"
 
-VENV_ACTIVATE="${VENV_DIR:-$WORKSPACE_ROOT/.venv}/bin/activate"
-if [ -f "$VENV_ACTIVATE" ]; then
-  # shellcheck disable=SC1090
-  source "$VENV_ACTIVATE"
-elif [ -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
-  # shellcheck disable=SC1091
-  source "$SCRIPT_DIR/.venv/bin/activate"
+LEROBOT_BIN="${VENV_DIR:-$WORKSPACE_ROOT/.venv}/bin/lerobot-edit-dataset"
+if [ ! -x "$LEROBOT_BIN" ]; then
+  echo "uv environment not found: $LEROBOT_BIN" >&2
+  echo "Run: (cd $WORKSPACE_ROOT && uv sync)" >&2
+  exit 1
 fi
 
 # ワークスペース内の lerobot ディレクトリを探索
@@ -65,7 +63,7 @@ done
 repo_ids+="]"
 echo "Merging the following directories: $repo_ids"
 
-lerobot-edit-dataset \
+"$LEROBOT_BIN" \
   --new_repo_id "$NEW_REPO_ID" \
   --operation.type merge \
   --operation.repo_ids "$repo_ids"

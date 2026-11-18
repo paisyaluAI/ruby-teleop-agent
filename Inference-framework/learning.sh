@@ -5,13 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$SCRIPT_DIR"
 
-VENV_ACTIVATE="${VENV_DIR:-$WORKSPACE_ROOT/.venv}/bin/activate"
-if [ -f "$VENV_ACTIVATE" ]; then
-  # shellcheck disable=SC1090
-  source "$VENV_ACTIVATE"
-elif [ -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
-  # shellcheck disable=SC1091
-  source "$SCRIPT_DIR/.venv/bin/activate"
+PYTHON_BIN="${VENV_DIR:-$WORKSPACE_ROOT/.venv}/bin/python"
+if [ ! -x "$PYTHON_BIN" ]; then
+  echo "uv environment not found: $PYTHON_BIN" >&2
+  echo "Run: (cd $WORKSPACE_ROOT && uv sync)" >&2
+  exit 1
 fi
 
 # 1. ワークスペース内の lerobot ディレクトリを探索
@@ -47,7 +45,7 @@ fi
 OUTPUT_DIR="$SCRIPT_DIR/outputs/train/ruby_physicalAI_$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$(dirname "$OUTPUT_DIR")"
 
-python -m lerobot.scripts.lerobot_train \
+"$PYTHON_BIN" -m lerobot.scripts.lerobot_train \
   --dataset.root="$DATASET_ROOT" \
   --dataset.repo_id="$DATASET_ROOT" \
   --dataset.use_imagenet_stats=false \

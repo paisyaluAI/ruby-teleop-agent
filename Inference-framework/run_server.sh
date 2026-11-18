@@ -8,17 +8,11 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 WORKSPACE_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
-VENV_ACTIVATE="${VENV_DIR:-$WORKSPACE_ROOT/.venv}/bin/activate"
-
-# uv 共通仮想環境 (.venv) の有効化
-if [ -f "$VENV_ACTIVATE" ]; then
-    # shellcheck disable=SC1090
-    source "$VENV_ACTIVATE"
-elif [ -f "$SCRIPT_DIR/.venv/bin/activate" ]; then
-    # shellcheck disable=SC1091
-    source "$SCRIPT_DIR/.venv/bin/activate"
-else
-    echo "警告: $WORKSPACE_ROOT/.venv が見つかりません。現在の Python 環境を使用します。"
+PYTHON_BIN="${VENV_DIR:-$WORKSPACE_ROOT/.venv}/bin/python"
+if [ ! -x "$PYTHON_BIN" ]; then
+    echo "uv environment not found: $PYTHON_BIN" >&2
+    echo "Run: (cd $WORKSPACE_ROOT && uv sync)" >&2
+    exit 1
 fi
 
 # ワークスペース内の lerobot ディレクトリを探索
@@ -67,6 +61,6 @@ if [ $# -ge 5 ]; then
     CMD+=("${@:5}")
 fi
 
-exec python "${CMD[@]}"
+exec "$PYTHON_BIN" "${CMD[@]}"
 
 

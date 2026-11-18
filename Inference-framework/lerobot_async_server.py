@@ -49,13 +49,17 @@ logger = logging.getLogger("LeRobotHTTPServer")
 
 def get_default_checkpoint() -> Optional[str]:
     """outputs/train 配下の最新 pretrained_model を探索する"""
-    train_dir = os.path.join(SCRIPT_DIR, "outputs", "train")
-    if not os.path.exists(train_dir):
-        return None
-    ckpts = [
-        p for p in glob.glob(os.path.join(train_dir, "**", "pretrained_model"), recursive=True)
-        if os.path.exists(os.path.join(p, "config.json")) and os.path.exists(os.path.join(p, "model.safetensors"))
+    train_dirs = [
+        os.path.join(SCRIPT_DIR, "outputs", "train"),
+        os.path.join(WORKSPACE_ROOT, "training", "VLA-Learning", "outputs", "train"),
     ]
+    ckpts = []
+    for train_dir in train_dirs:
+        if os.path.exists(train_dir):
+            ckpts.extend(
+                p for p in glob.glob(os.path.join(train_dir, "**", "pretrained_model"), recursive=True)
+                if os.path.exists(os.path.join(p, "config.json")) and os.path.exists(os.path.join(p, "model.safetensors"))
+            )
     return max(ckpts, key=os.path.getmtime) if ckpts else None
 
 
@@ -101,7 +105,7 @@ class LeRobotInferenceEngine:
         target_size = chunk_size or self.default_chunk_size
 
         image_tensor = torch.from_numpy(image_rgb).permute(2, 0, 1).float() / 255.0
-        state_tensor = torch.tensor(state[:2], dtype=torch.float32)
+        state_tensor = torch.tensor(state, dtype=torch.float32)
 
         batch = {
             "observation.images.camera1": image_tensor,
