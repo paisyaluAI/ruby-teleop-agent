@@ -134,7 +134,7 @@ module LeRobot
         chunk = data['action_chunk'] || data['full_action_chunk']
         if chunk.is_a?(Array) && !chunk.empty?
           exec_chunk = chunk.first(@exec_steps)
-          new_actions = exec_chunk.map { |a| [a[0].to_f, a[1].to_f] }
+          new_actions = exec_chunk.map { |a| Array(a).map(&:to_f) }
           @queue_mutex.synchronize do
             @action_queue.concat(new_actions)
           end
