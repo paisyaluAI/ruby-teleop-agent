@@ -1,3 +1,6 @@
+local_library = File.expand_path('../../Lerobot-Dataset-Ruby/lib', __dir__)
+$LOAD_PATH.unshift(local_library) if File.directory?(local_library)
+
 IS_PRODUCTION = ENV['PRODUCTION'] == '1' || ARGV.include?('--production')
 
 if IS_PRODUCTION
