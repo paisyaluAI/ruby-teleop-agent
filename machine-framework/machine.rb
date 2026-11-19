@@ -48,11 +48,8 @@ end
 
 #Mockならmp4（または真っ暗なダミー動画）、実機ならカメラ
 if IS_PRODUCTION
-  begin
-    Libopencv.cam_open(0, 640, 480)
-  rescue ArgumentError
-    Libopencv.cam_open(0)
-  end
+  cam_idx = (ENV['CAMERA_INDEX'] || 0).to_i
+  Libopencv.cam_open(cam_idx, 640, 480)
 else
   mock_video_path = ENV['MOCK_VIDEO_PATH'] || File.expand_path('test/dummy_video.mp4', __dir__)
   setup_mock_video(mock_video_path)
@@ -63,36 +60,50 @@ writer.start_recording
 #完全終了まで止めない
 begin
   loop do
+    puts "\n========================================================"
+    puts "【待機中】コントローラーの [START] ボタンを押すと走行・記録を開始します"
+    puts "         [GUIDE/HOME] ボタンで完全終了します"
+    puts "========================================================"
 
-  #controllerがstartのときになったら脱出
-  loop do
-    controller.poll
-    #終了ボタンが押されたら完全終了
-    break if controller.process_finish
-    break if controller.process_start
-
-    SDL2.delay(30) #待機
-  end
-
-  # 終了ボタンが押された場合はメインループを抜ける
-  break if controller.process_finish
-
-  begin
-    p "入力受付開始"
-    writer.start_episode(task: prompt)
-    start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-    episode_index = 0
-    frame_interval = 1.0 / TARGET_FPS
-    next_frame_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-
-    #コントローラーがstartの時だけ動く
+    #controllerがstartのときになったら脱出
     loop do
-      #コントローラーの値を取得
       controller.poll
-      left_value = controller.get_left_axis.to_f.clamp(-1.0, 1.0)
-      right_value = controller.get_right_axis.to_f.clamp(-1.0, 1.0)
-      
-      puts "L:#{left_value.round(2)}, R:#{right_value.round(2)}" if episode_index % 30 == 0
+      #終了ボタンが押されたら完全終了
+      break if controller.process_finish
+      break if controller.process_start
+
+      SDL2.delay(30) #待機
+    end
+
+    # 終了ボタンが押された場合はメインループを抜ける
+    if controller.process_finish
+      puts "終了ボタンが押されました。セッションを終了します。"
+      break
+    end
+
+    begin
+      puts "\n>>> 【入力受付中 / 録画中】操作を開始してください！ <<<"
+      puts "    ・左スティック前後: 左タイヤ"
+      puts "    ・右スティック前後: 右タイヤ"
+      puts "    ・[BACK] ボタン: エピソードを保存して一時停止"
+      puts "    ・[十字キー下 (DPAD_DOWN)]: エピソードを破棄して一時停止"
+      puts "--------------------------------------------------------"
+      writer.start_episode(task: prompt)
+      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      episode_index = 0
+      frame_interval = 1.0 / TARGET_FPS
+      next_frame_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+      #コントローラーがstartの時だけ動く
+      loop do
+        #コントローラーの値を取得
+        controller.poll
+        left_value = controller.get_left_axis.to_f.clamp(-1.0, 1.0)
+        right_value = controller.get_right_axis.to_f.clamp(-1.0, 1.0)
+        
+        if episode_index % 10 == 0 || left_value.abs > 0.05 || right_value.abs > 0.05
+          puts "フレーム #{episode_index}: L=#{left_value.round(2)}, R=#{right_value.round(2)}"
+        end
 
       # 保存部分 (動画終端時は自動で先頭に巻き戻してループ取得)
       image_bytes = begin

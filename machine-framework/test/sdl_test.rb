@@ -1,27 +1,30 @@
 require 'sdl2'
-# # 動く
-# SDL2.init(SDL2::INIT_JOYSTICK|SDL2::INIT_EVENTS)
-# sdljoy = SDL2::Joystick
-# js = sdljoy.open(0)
-# SDL2::Event.poll
-# p js.name
-# p js.axis(0)
-# p js.axis(1)
-# p js.axis(2)
-# p js.axis(3)
+require_relative '../controller'
 
-# js.close
+puts "=== SDL2 コントローラー テストプログラム ==="
+ctrl = Controller.new
 
-SDL2.init(SDL2::INIT_JOYSTICK|SDL2::INIT_GAMECONTROLLER|SDL2::INIT_EVENTS)
-sdljoy = SDL2::Joystick
-js = sdljoy.open(0)
-guid = js.GUID()
-p guid
-gc = SDL2::GameController.open(0)
+puts "\nスティックやボタンを動かしてください (Ctrl+C で終了)"
+puts "--------------------------------------------------------"
+
 loop do
-  p gc.axis(SDL2::GameController::Axis::LEFTX)
-  p gc.axis(SDL2::GameController::Axis::LEFTY)
-  p gc.axis(SDL2::GameController::Axis::RIGHTX)
-  p gc.axis(SDL2::GameController::Axis::RIGHTY)
-  sleep 1
+  ctrl.poll
+  left = ctrl.get_left_axis
+  right = ctrl.get_right_axis
+  start = ctrl.process_start
+  stop = ctrl.process_stop
+  finish = ctrl.process_finish
+  discard = ctrl.process_discard
+
+  btn_status = []
+  btn_status << "START" if start
+  btn_status << "BACK/STOP" if stop
+  btn_status << "GUIDE/FINISH" if finish
+  btn_status << "DPAD_DOWN/DISCARD" if discard
+
+  print "\r[L-Axis(前進+1/後退-1): %+.2f] [R-Axis(前進+1/後退-1): %+.2f] ボタン: [%s]          " % [
+    left, right, btn_status.empty? ? "なし" : btn_status.join(", ")
+  ]
+  $stdout.flush
+  sleep 0.05
 end

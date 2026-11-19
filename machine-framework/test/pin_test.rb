@@ -1,20 +1,25 @@
-require_relative "ext/gpio/libgpiod_ext.so"
-
-# ピンを設定
-# GPIOD::Pin.new(CHIP_PATH, PIN_NUM)
-# gpioをオン
-# .on
-# gpioをオフ
-# .off
+require_relative "../ext/gpio/libgpiod_ext.so"
 
 CHIP_PATH = '/dev/gpiochip0'
-PIN_NUM = 12
+pins = {
+  "左タイヤ前進 (GPIO 12)" => 12,
+  "左タイヤ後退 (GPIO 16)" => 16,
+  "右タイヤ前進 (GPIO 20)" => 20,
+  "右タイヤ後退 (GPIO 21)" => 21
+}
 
-gpio = GPIOD::Pin.new(CHIP_PATH, PIN_NUM)
-gpio.on
-sleep(5)
-p "5s"
+puts "=== モーター駆動 GPIO ピン テスト ==="
+puts "左右の各モーターを1秒ずつ順番に回転させます。"
 
-gpio.off
-p "off"
+pins.each do |name, pin_num|
+  puts "\n--> #{name} を ON にします..."
+  gpio = GPIOD::Pin.new(CHIP_PATH, pin_num)
+  gpio.on
+  sleep(1.0)
+  gpio.off
+  puts "    #{name} を OFF にしました。"
+  sleep(0.5)
+end
+
+puts "\n全ピントグル完了。"
 
