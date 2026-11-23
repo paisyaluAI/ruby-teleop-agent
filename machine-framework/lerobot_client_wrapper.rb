@@ -11,15 +11,18 @@ module LeRobot
     DEFAULT_SERVER_URL = ENV.fetch('INFERENCE_SERVER_URL', 'http://127.0.0.1:8080')
     DEFAULT_PROMPT = ENV.fetch('PROMPT', 'Go to the blue star')
 
-    attr_reader :server_url, :prompt, :connected
+    attr_reader :server_url, :prompt, :connected, :async_prefetch
 
-    def initialize(server_url: DEFAULT_SERVER_URL, prompt: DEFAULT_PROMPT, create_steps: 10, exec_steps: 10)
+    def initialize(server_url: DEFAULT_SERVER_URL, prompt: DEFAULT_PROMPT, create_steps: 10, exec_steps: 10, async_prefetch: false, prefetch_threshold: 15)
       url = server_url.sub(%r{\Aws://}, 'http://').sub(%r{\Awss://}, 'https://')
       @uri = URI.parse(url)
       @server_url = url
       @prompt = prompt
       @create_steps = create_steps.to_i
       @exec_steps = exec_steps.to_i
+      @async_prefetch = async_prefetch
+      @refill_threshold = async_prefetch ? prefetch_threshold.to_i : 1
+      @step_count = 0
 
       @action_queue = []
       @queue_mutex = Mutex.new
@@ -50,12 +53,12 @@ module LeRobot
 
       @is_fetching = false
 
-      # バックグラウンドワーカースレッド: キュー残が1以下になったら最新観測で推論を行い末尾に追加
+      # バックグラウンドワーカースレッド: キュー残が閾値以下になったら最新観測で推論を行う
       @worker_thread = Thread.new do
         while @running
           should_fetch = false
           @queue_mutex.synchronize do
-            should_fetch = (@action_queue.size <= 1) && !@is_fetching
+            should_fetch = (@action_queue.size <= @refill_threshold) && !@is_fetching
           end
 
           obs = nil
@@ -96,6 +99,7 @@ module LeRobot
       end
 
       @queue_mutex.synchronize do
+        @step_count += 1
         @action_queue.shift
       end
     end
@@ -114,6 +118,7 @@ module LeRobot
     private
 
     def request_inference(obs)
+      sent_step = @queue_mutex.synchronize { @step_count }
       payload = {
         image: Base64.strict_encode64(obs[:image_bytes]),
         state: obs[:state],
@@ -136,7 +141,13 @@ module LeRobot
           exec_chunk = chunk.first(@exec_steps)
           new_actions = exec_chunk.map { |a| Array(a).map(&:to_f) }
           @queue_mutex.synchronize do
-            @action_queue.concat(new_actions)
+            if @async_prefetch
+              # 推論中に進んだステップ分を捨て、古い残りキューを最新チャンクで置き換える
+              fresh = new_actions.drop(@step_count - sent_step)
+              @action_queue.replace(fresh) unless fresh.empty?
+            else
+              @action_queue.concat(new_actions)
+            end
           end
         end
       end

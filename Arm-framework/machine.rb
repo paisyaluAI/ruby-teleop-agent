@@ -126,8 +126,10 @@ if ARGV.include?('--vla') || ENV['VLA'] == '1'
   require_relative '../machine-framework/lerobot_client_wrapper'
 
   server_url = ENV['INFERENCE_SERVER_URL'] || 'http://127.0.0.1:8080'
-  create_steps = (ENV['CREATE_STEPS'] || 10).to_i
+  async_prefetch = ARGV.include?('--async') || ENV['ASYNC_PREFETCH'] == '1'
+  create_steps = (ENV['CREATE_STEPS'] || (async_prefetch ? 30 : 10)).to_i
   exec_steps = (ENV['EXEC_STEPS'] || create_steps).to_i
+  prefetch_threshold = (ENV['PREFETCH_THRESHOLD'] || 15).to_i
 
   arm = SO101::Follower.new(
     port: follower_port,
@@ -141,13 +143,16 @@ if ARGV.include?('--vla') || ENV['VLA'] == '1'
   puts "  モード: #{IS_PRODUCTION ? '本番実機' : 'Mock'}"
   puts "  タスク: #{prompt}"
   puts "  推論サーバー: #{server_url}"
+  puts "  推論方式: #{async_prefetch ? "非同期先読み (残り#{prefetch_threshold}で次を要求)" : '逐次 (残り1で次を要求)'}"
   puts '=================================================='
 
   vla_client = LeRobot::VLAAsyncClient.new(
     server_url: server_url,
     prompt: prompt,
     exec_steps: exec_steps,
-    create_steps: create_steps
+    create_steps: create_steps,
+    async_prefetch: async_prefetch,
+    prefetch_threshold: prefetch_threshold
   )
 
   open_camera_or_mock_video

@@ -17,7 +17,7 @@ Ruby で実機（4WD ロボットカー）を制御し、Python 側の推論サ�
   - 推論サーバーから予測アクション（左右モーター速度）を非同期受信して自律走行
   - 実機なしで動作確認できる Mock モード対応
 - **推論サーバー側 (`Inference-framework`)**: **Python**
-  - SmolVLA (450M) モデルを用いた低遅延な非同期推論（FastAPI / Uvicorn による HTTP REST API）
+  - SmolVLA (450M) または ACT モデルを用いた低遅延な非同期推論（FastAPI / Uvicorn による HTTP REST API、`ACT_MODE=1` で ACT 切替）
   - 複数走行データのマージおよびファインチューニング学習基盤
 
 ---
@@ -161,8 +161,11 @@ ruby machine.rb
 ```bash
 cd Inference-framework
 
-# 最新の学習モデルを自動ロードして起動
+# 最新の学習モデルを自動ロードして起動 (SmolVLA)
 ./run_server.sh 0.0.0.0 8080
+
+# ACT モデルで起動する場合
+# ACT_MODE=1 ./run_server.sh 0.0.0.0 8080
 
 # ※ 特定のチェックポイントを指定して起動する場合:
 # ./run_server.sh 0.0.0.0 8080 outputs/train/<セッション名>/checkpoints/last/pretrained_model cuda
@@ -178,12 +181,15 @@ cd Inference-framework
   ```bash
   cd machine-framework
   PRODUCTION=1 INFERENCE_SERVER_URL=http://<推論サーバーIP>:8080 PROMPT="青い星に向かう" ruby machine_vla.rb
+  # 非同期先読みモードを使う場合:
+  # ASYNC_PREFETCH=1 PRODUCTION=1 INFERENCE_SERVER_URL=http://<推論サーバーIP>:8080 PROMPT="青い星に向かう" ruby machine_vla.rb
   ```
 
 - **PC 上で Mock 検証 (実機なし):**
   ```bash
   cd machine-framework
   INFERENCE_SERVER_URL=http://127.0.0.1:8080 ruby machine_vla.rb
+  # 非同期先読みモード: ruby machine_vla.rb --async
   ```
 
 > [!TIP]
@@ -192,6 +198,7 @@ cd Inference-framework
 > ```bash
 > cd machine-framework
 > ./run_mock_test.sh "青い星に向かう"
+> # ACT サーバーを使う場合: ACT_MODE=1 ./run_mock_test.sh
 > ```
 
 ---

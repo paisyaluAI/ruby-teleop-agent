@@ -34,15 +34,25 @@ HOST="${1:-0.0.0.0}"
 PORT="${2:-8080}"
 CHECKPOINT="${3:-}"
 DEVICE="${4:-auto}"
+ACT_MODE="${ACT_MODE:-0}"
+
+if [ "$ACT_MODE" = "1" ]; then
+    SERVER_SCRIPT="$SCRIPT_DIR/lerobot_act_server.py"
+    POLICY_LABEL="ACT"
+else
+    SERVER_SCRIPT="$SCRIPT_DIR/lerobot_async_server.py"
+    POLICY_LABEL="SmolVLA"
+fi
 
 echo "======================================================================"
 echo "  LeRobot HTTP Inference Server"
+echo "  Policy: $POLICY_LABEL (ACT_MODE=$ACT_MODE)"
 echo "  Listen: $HOST:$PORT"
 echo "  Checkpoint: ${CHECKPOINT:-デフォルト (最新学習モデル)}"
 echo "  Device: $DEVICE"
 echo "======================================================================"
 
-CMD=("$SCRIPT_DIR/lerobot_async_server.py" --host "$HOST" --port "$PORT" --device "$DEVICE")
+CMD=("$SERVER_SCRIPT" --host "$HOST" --port "$PORT" --device "$DEVICE")
 if [ -n "$CHECKPOINT" ]; then
     CMD+=(--checkpoint "$CHECKPOINT")
 fi

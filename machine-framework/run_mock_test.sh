@@ -10,9 +10,15 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 WORKSPACE_ROOT="$(cd "$PROJECT_ROOT/../.." && pwd)"
-SERVER_SCRIPT="$PROJECT_ROOT/Inference-framework/lerobot_async_server.py"
+ACT_MODE="${ACT_MODE:-0}"
+if [ "$ACT_MODE" = "1" ]; then
+    SERVER_NAME="lerobot_act_server.py"
+else
+    SERVER_NAME="lerobot_async_server.py"
+fi
+SERVER_SCRIPT="$PROJECT_ROOT/Inference-framework/$SERVER_NAME"
 if [ ! -f "$SERVER_SCRIPT" ]; then
-    SERVER_SCRIPT="$WORKSPACE_ROOT/training/VLA-Learning/lerobot_async_server.py"
+    SERVER_SCRIPT="$WORKSPACE_ROOT/training/VLA-Learning/$SERVER_NAME"
 fi
 CLIENT_SCRIPT="$SCRIPT_DIR/machine_vla.rb"
 PORT=8080

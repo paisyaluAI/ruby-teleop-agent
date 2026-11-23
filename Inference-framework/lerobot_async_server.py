@@ -240,6 +240,11 @@ def create_app(engine: LeRobotInferenceEngine, default_task: str, create_steps: 
 
 
 def main():
+    if os.environ.get("ACT_MODE") == "1":
+        import lerobot_act_server
+        lerobot_act_server.main()
+        return
+
     parser = argparse.ArgumentParser(description="LeRobot HTTP Inference Server")
     parser.add_argument("--checkpoint", type=str, default=get_default_checkpoint(), help="Model checkpoint path")
     parser.add_argument("--host", type=str, default="0.0.0.0", help="Listen address")

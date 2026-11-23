@@ -86,6 +86,7 @@ Inference-framework/
 ├── merge.sh                   # 複数エピソードのデータセットを1つにマージするスクリプト
 ├── run_server.sh              # 推論サーバー起動スクリプト (共通 .venv 環境自動適用)
 ├── lerobot_async_server.py    # FastAPI ベースの SmolVLA HTTP 非同期推論サーバー本体
+├── lerobot_act_server.py      # FastAPI ベースの ACT HTTP 推論サーバー本体 (ACT_MODE=1 で起動)
 ├── setup_lerobot_env.sh       # uv による共通仮想環境 (robot-stack/.venv) セットアップスクリプト
 ├── data/                      # 収集・変換した学習用データセット配置ディレクトリ (git無視)
 │   ├── <YYYYMMDD_HHMM>/       # 各走行回ごとのデータセット (meta/, data/, videos/)
@@ -160,16 +161,23 @@ robot-stack/
 # 引数の指定形式: ./run_server.sh [HOST] [PORT] [CHECKPOINT_PATH] [DEVICE]
 # 例: 特定のチェックポイントと GPU (cuda) を指定して起動
 ./run_server.sh 0.0.0.0 8080 outputs/train/ruby_physicalAI_<timestamp>/checkpoints/last/pretrained_model cuda
+
+# ACT モデルで起動する場合 (ACT_MODE=1 を指定すると最新の ACT モデルを自動ロード)
+ACT_MODE=1 ./run_server.sh 0.0.0.0 8080
 ```
 
 ### 2. Python 直接起動
-環境変数を細かく制御したい場合は、共通仮想環境 `robot-stack/.venv` を有効化して直接 [`lerobot_async_server.py`](lerobot_async_server.py) を実行します。
+環境変数を細かく制御したい場合は、共通仮想環境 `robot-stack/.venv` を有効化して直接 [`lerobot_async_server.py`](lerobot_async_server.py)（ACT 時は [`lerobot_act_server.py`](lerobot_act_server.py) または `ACT_MODE=1`）を実行します。
 
 ```bash
 source ../../../.venv/bin/activate
 
-# 自動検出される最新モデルで起動
+# 自動検出される最新モデルで起動 (SmolVLA)
 python lerobot_async_server.py --host 0.0.0.0 --port 8080
+
+# ACT モードで起動 (どちらか一方で起動可能)
+ACT_MODE=1 python lerobot_async_server.py --host 0.0.0.0 --port 8080
+# python lerobot_act_server.py --host 0.0.0.0 --port 8080
 
 # オプションを明示指定して起動
 python lerobot_async_server.py \
@@ -324,6 +332,7 @@ data/<YYYYMMDD_HHMM>/
 | `--create-steps` | `10` | 1 回の推論でモデルが生成するアクションチャンクのステップ数（10 ステップ = 10 FPS で 1.0 秒分）。 |
 | `--exec-steps` | `10` | クライアントが実際に採用・実行する先頭ステップ数（`exec_steps <= create_steps`）。 |
 | `--timeout-keep-alive` | `65` | Uvicorn の HTTP Keep-Alive 接続保持秒数（[Uvicorn Timeout Settings](https://www.uvicorn.org/settings/#timeouts)）。通信遅延やコネクション再確立のオーバーヘッドを大幅に削減します。 |
+| `ACT_MODE`（環境変数） | `0` | `1` を指定すると [`lerobot_act_server.py`](lerobot_act_server.py) を起動し、ACT モデル（`type == "act"`）で推論します。 |
 
 ---
 

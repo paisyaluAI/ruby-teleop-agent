@@ -178,8 +178,13 @@ PRODUCTION=1 INFERENCE_SERVER_URL=http://<INFERENCE_SERVER_IP>:8080 PROMPT="青�
 # 起動スクリプト (推論サーバーが未起動なら自動起動します)
 ./run_mock_test.sh "青い星に向かう"
 
+# ACT 推論サーバーで起動する場合
+ACT_MODE=1 ./run_mock_test.sh
+
 # 推論サーバーがすでに起動済みの場合は直接起動
 ruby machine_vla.rb
+# 非同期先読みモードで起動する場合:
+# ruby machine_vla.rb --async
 ```
 
 > **安全停止方法**:  
@@ -195,8 +200,8 @@ ruby machine_vla.rb
    - カメラからフレームを取得し、現在のモーター値とともにクライアントへ渡します。
    - `next_action` をノンブロッキングで呼び出し、キューの先頭から次の `[left, right]` を取り出してタイヤを動かします。
 2. **ワーカースレッド (バックグラウンド)**:
-   - アクションキューの残数が **1 ステップ以下** になると、最新の観測画像・状態・プロンプトを用いてサーバーへ推論リクエスト（`POST /predict`）を送信します。
-   - 受信した 10 ステップの計画（Action Chunk）をキューの末尾に追加します。
+   - デフォルト（逐次モード）では、アクションキューの残数が **1 ステップ以下** になると最新の観測画像・状態・プロンプトで `POST /predict` を送信し、受信したアクションチャンクをキューの末尾に追加します。
+   - **非同期先読みモード**（`ASYNC_PREFETCH=1` または `--async`）では、キュー残が `PREFETCH_THRESHOLD`（デフォルト `15`）以下になった時点で早めに次のチャンク（デフォルト `30` ステップ）を要求し、届いたら推論中に進んだステップ分を捨てて、残っている古いキューを最新チャンクで置き換えます（使用例: `ASYNC_PREFETCH=1 ./run_production.sh <IP> 8080 "..."` または `ruby machine_vla.rb --async`）。
 3. **フェイルセーフ**:
    - ネットワーク一時切断などでキューが完全に枯渇した場合、直ちに左右モーターを `0.0` にして安全停止します。
 
@@ -268,8 +273,11 @@ PRODUCTION=1 ruby player.rb output_dataset/<YYYYMMDD_HHMM> 0
 | `PRODUCTION` | `0` (Mock) | `1` を指定すると実機モード（GPIO, 実カメラ, ゲームパッド）で動作。未指定または `0` で Mock モード。 | - |
 | `INFERENCE_SERVER_URL` | `http://127.0.0.1:8080` | 推論サーバーのベース URL。`ws://` 形式で指定された場合も自動で `http://` に正規化されます。 | [FastAPI / HTTP](https://fastapi.tiangolo.com/) |
 | `PROMPT` | `"Go to the blue star"` | ロボットに指示する自然言語タスク文字列。SmolVLA モデルへ条件付け入力として送られます。 | [SmolVLA Model Card](https://huggingface.co/lerobot/smolvla_base) |
-| `CREATE_STEPS` | `10` | 推論サーバーに要求する生成アクションステップ数（10ステップ = 10 FPS で 1秒分）。 | [LeRobot Policy Inference](https://github.com/huggingface/lerobot) |
+| `CREATE_STEPS` | `10`（先読み時 `30`） | 推論サーバーに要求する生成アクションステップ数（10ステップ = 10 FPS で 1秒分）。 | [LeRobot Policy Inference](https://github.com/huggingface/lerobot) |
 | `EXEC_STEPS` | `10` | クライアントが実際に実行キューに投入する先頭ステップ数。 | - |
+| `ASYNC_PREFETCH` | `0` | `1`（または `--async` 引数）で非同期先読みモードを有効化。 | - |
+| `PREFETCH_THRESHOLD` | `15` | 非同期先読みモードで、キュー残がこの値以下になったら次の推論を要求する閾値。 | - |
+| `ACT_MODE` | `0` | `1` を指定すると `run_mock_test.sh` で ACT 推論サーバー（[`lerobot_act_server.py`](../Inference-framework/lerobot_act_server.py)）を起動。 | - |
 | `TARGET_FPS` | `10` | 制御およびデータ収集の目標フレームレート（100ms 周期）。 | [LeRobot Dataset Specs](https://huggingface.co/docs/lerobot/en/datasets) |
 
 ### 関連公式リソース
