@@ -259,7 +259,6 @@ begin
     begin
       puts ">>> エピソード #{number} 記録開始 ([Enter]: 保存して停止 / [D]: 破棄して停止)"
       writer.start_episode(task: prompt)
-      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       episode_frame_idx = 0
       frame_interval = 1.0 / TARGET_FPS
       next_frame_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -276,8 +275,7 @@ begin
           writer.add_frame(
             action: action,
             state: state,
-            image_bytes: image_bytes,
-            timestamp: Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+            image_bytes: image_bytes
           )
           if (episode_frame_idx % 30).zero?
             puts "フレーム #{episode_frame_idx} 保存 (#{format_joints(action, arm.motor_names)})"

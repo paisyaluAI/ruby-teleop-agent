@@ -89,7 +89,6 @@ begin
       puts "    ・[十字キー下 (DPAD_DOWN)]: エピソードを破棄して一時停止"
       puts "--------------------------------------------------------"
       writer.start_episode(task: prompt)
-      start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
       episode_index = 0
       frame_interval = 1.0 / TARGET_FPS
       next_frame_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
@@ -117,8 +116,7 @@ begin
         writer.add_frame(
           action: [left_value, right_value],
           state: [left_value, right_value],
-          image_bytes: image_bytes,
-          timestamp: Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time
+          image_bytes: image_bytes
         )
         puts "フレーム #{episode_index} を保存しました (L:#{left_value.round(2)}, R:#{right_value.round(2)})" if episode_index % 30 == 0
       else
